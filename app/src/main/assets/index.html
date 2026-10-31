@@ -1,0 +1,456 @@
+<!doctype html>
+<html lang="te"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Telugu Calendar</title>
+<style>
+/* Layout: printed-page look. Weekday rows by week columns with ruled cells; festivals box in the empty cells; colour and dark are independent switches. */
+:root{
+  --paper:#ffffff; --ink:#111111; --rule:#111111; --muted:#4d4d57; --red:#b3261e; --hl:#ffe9a8;
+  --band:#111111; --band-ink:#ffffff;
+  --wkbg:#ffffff; --fbg:#ffffff; --pbg:#ffffff; --abg:#ffffff; --sunc:#111111;
+  --num:"Oswald","Roboto Condensed","sans-serif-condensed","Arial Narrow",sans-serif;
+  --tel:"Noto Sans Telugu",system-ui,sans-serif;
+}
+:root[data-color="1"]{
+  --paper:#fbfbff; --ink:#17163a; --rule:#4a4c9a; --muted:#555a84; --red:#c0262d; --hl:#ffe08a;
+  --band:#2d2a8a; --band-ink:#ffffff;
+  --wkbg:#e9ebff; --fbg:#fde7e5; --pbg:#fff1c7; --abg:#dfe3ff; --sunc:#c0262d;
+}
+:root[data-dark="1"]{
+  --paper:#14141c; --ink:#f1f1f4; --rule:#6a6a80; --muted:#b0b0c4; --red:#ff9d94; --hl:#4a3d12;
+  --band:#f1f1f4; --band-ink:#14141c;
+  --wkbg:#14141c; --fbg:#14141c; --pbg:#14141c; --abg:#14141c; --sunc:#f1f1f4; color-scheme:dark;
+}
+:root[data-dark="1"][data-color="1"]{
+  --paper:#11122b; --ink:#ecebfa; --rule:#6f73d1; --muted:#aab0dd; --red:#ff9d94; --hl:#4a3d12;
+  --band:#4b49c9; --band-ink:#ffffff;
+  --wkbg:#1b1d45; --fbg:#3b1f2e; --pbg:#3a3118; --abg:#1f2350; --sunc:#ff9d94; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--tel);font-size:15px;line-height:1.5;
+  padding-block:0 76px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--paper);z-index:10}
+.wrap{max-width:760px;margin:0 auto}
+header{position:sticky;top:env(safe-area-inset-top,0px);background:var(--paper);z-index:5;padding:6px 0 6px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 8px;margin-bottom:4px}
+.bar h1{margin:0;font:700 14px/1.1 var(--num);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.sws{display:flex;gap:2px}
+.sw{display:flex;align-items:center;gap:4px;background:transparent;border:0;color:var(--ink);font:700 11px var(--tel);cursor:pointer;min-height:40px;padding:0 2px}
+.sw i{position:relative;width:34px;height:22px;border:1.5px solid var(--rule);border-radius:11px;background:var(--paper);flex:none}
+.sw i::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:var(--ink)}
+.sw[aria-checked="true"] i{background:var(--band)}
+.sw[aria-checked="true"] i::after{transform:translateX(12px);background:var(--band-ink)}
+@media (prefers-reduced-motion:no-preference){.sw i::after{transition:transform .15s}}
+.chips{position:relative;display:flex;border:1.5px solid var(--rule);overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chips button{flex:1 0 auto;min-width:84px;border:0;border-right:1.5px solid var(--rule);background:transparent;color:var(--ink);padding:3px 8px;font:700 14px/1.2 var(--tel);cursor:pointer;min-height:44px}
+.chips button:last-child{border-right:0}
+.chips small{display:block;font:500 11px/1 var(--num);opacity:.8;letter-spacing:.06em}
+.chips button[aria-pressed="true"]{background:var(--band);color:var(--band-ink)}
+button:focus-visible{outline:2px solid var(--red);outline-offset:-2px}
+.page{margin-top:6px;display:flex;flex-direction:column}
+.top{display:contents}
+.top>div{padding:6px 10px;font-size:12px;line-height:1.45;min-width:0;border:1.5px solid var(--rule);margin-top:8px;order:3}
+.top .mid{order:0;margin-top:0;padding:4px 10px;text-align:center;display:flex;align-items:baseline;justify-content:center;gap:12px;flex-wrap:wrap}
+.mid .en{font:700 18px/1.1 var(--num);letter-spacing:.12em}
+.mid .y{font:700 28px/1 var(--num)}
+.mid .te{font:800 18px/1.2 var(--tel)}
+.top b{font-weight:800}
+.top table{border-collapse:collapse;margin-top:4px;font-variant-numeric:tabular-nums;width:100%;max-width:320px}
+.top th,.top td{border:1px solid var(--rule);padding:0 6px;text-align:center;font-weight:500}
+.cred{font-size:11px;color:var(--muted);margin-top:6px}
+.nodata{font-size:13px}
+.scroll{order:1;overflow-x:auto;margin-top:8px;-webkit-overflow-scrolling:touch}
+.g{display:grid;border-top:1.5px solid var(--rule);border-left:1.5px solid var(--rule)}
+.g>*{border:0;border-right:1.5px solid var(--rule);border-bottom:1.5px solid var(--rule);min-width:0;overflow:hidden}
+.wk{position:sticky;left:0;z-index:2;background:var(--wkbg);padding:3px 4px}
+.wk.sun .en,.wk.sun .te{color:var(--sunc)}
+.wk .en{font:700 22px/1 var(--num)}
+.wk .te{font:800 17px/1.15 var(--tel)}
+.wk .t{font-size:9.5px;line-height:1.35;margin-top:2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.dc{text-align:left;background:transparent;color:var(--ink);padding:3px 4px;font:inherit;cursor:pointer;min-height:84px}
+.dc.f{background:var(--fbg)}
+.dc.pf{background:var(--pbg)}
+.dc.pn{background:var(--abg)}
+.dc .hd{display:flex;align-items:center;gap:3px;flex-wrap:wrap}
+.dc .n{font:700 26px/1 var(--num);display:inline-block}
+.dc .n.full{border:2px solid var(--ink);border-radius:50%;padding:2px 4px 0}
+.dc .n.new::before{content:"";display:inline-block;width:12px;height:12px;border-radius:50%;background:var(--ink);margin-right:2px;vertical-align:1px}
+.dc .mk{font:800 10px var(--tel)}
+.dc .ms{font:800 10px var(--tel);background:var(--band);color:var(--band-ink);padding:0 3px}
+.dc .l{font-size:10px;line-height:1.3;overflow-wrap:anywhere;margin-top:1px}
+.dc .x{font-size:9.5px;font-weight:800;color:var(--red);overflow-wrap:anywhere}
+.dc.f .n{color:var(--red)}
+.dc.td{background:var(--hl)}
+.dc.sel{box-shadow:inset 0 0 0 2px var(--red)}
+.fb{position:relative;min-height:0}
+.fb h4{margin:0;background:var(--band);color:var(--band-ink);font:800 11px var(--tel);text-align:center;padding:1px 0}
+.fb .fl{position:absolute;left:0;right:0;top:18px;bottom:0;font-size:9.5px;line-height:1.3;padding:2px 3px;overflow:auto}
+.band{order:2;background:var(--band);color:var(--band-ink);text-align:center;font:800 14px var(--tel);padding:8px 10px;margin-top:8px}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+.nav{display:flex;gap:8px;margin:10px 0}
+.nav button{border:1.5px solid var(--rule);background:transparent;color:var(--ink);min-width:52px;height:46px;font:700 22px var(--tel);cursor:pointer}
+.nav .today{flex:1;font:700 15px var(--tel)}
+.hero{border:1.5px solid var(--rule);padding:10px 14px;display:grid;grid-template-columns:auto 1fr;gap:0 16px;align-items:center}
+.hero .num{font:700 84px/1 var(--num);grid-row:span 3}
+.hero .num.full{border:3px solid var(--ink);border-radius:50%;padding:6px 14px 0}
+.hero .wd{font:800 26px/1.2 var(--tel)}
+.hero .en{font:500 14px var(--num);letter-spacing:.06em;color:var(--muted)}
+.hero .masa{font-size:14px;font-weight:700}
+.rows{display:grid;margin-top:-1.5px}
+.row{border:1.5px solid var(--rule);padding:6px 14px;margin-top:-1.5px;min-width:0}
+.row h3{margin:0;font:700 12px var(--tel);color:var(--muted)}
+.row p{margin:0;font-size:18px;font-weight:500;overflow-wrap:anywhere}
+.row .note{font-size:12px;color:var(--muted)}
+.row.fest{background:var(--band);color:var(--band-ink)}
+.row.fest h3{color:var(--band-ink);opacity:.8}
+.row.fest p{font-weight:800}
+.split{display:grid;grid-template-columns:1fr 1fr;margin-top:-1.5px}
+.split .row{margin-top:0}
+.split .row+.row{margin-left:-1.5px}
+@media (max-width:360px){.split{grid-template-columns:1fr}.split .row+.row{margin-left:0;margin-top:-1.5px}}
+.tag{display:inline-block;border:1.5px solid var(--rule);padding:0 8px;font-size:13px;font-weight:700;margin-top:2px}
+.info{margin-top:12px;border:1.5px solid var(--rule);padding:8px 12px;font-size:13px}
+.info table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.info th,.info td{text-align:left;padding:2px 6px;border-bottom:1px solid var(--rule)}
+.info h3{margin:0 0 4px;font:800 14px var(--tel)}
+.flist{display:grid;margin-top:10px;border-top:1.5px solid var(--rule)}
+.flist button{display:grid;grid-template-columns:54px 1fr;gap:10px;text-align:left;background:transparent;border:0;border-bottom:1.5px solid var(--rule);color:var(--ink);padding:8px 4px;font:inherit;font-weight:700;cursor:pointer;min-height:48px}
+.flist b{font:700 30px/1 var(--num);color:var(--red)}
+.flist em{display:block;font-style:normal;font-size:12px;font-weight:500;color:var(--muted)}
+.verify{margin-top:10px;font-size:12px;color:var(--muted)}
+.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1.5px solid var(--rule);display:flex;
+  padding:0 max(0px,env(safe-area-inset-left,0px)) env(safe-area-inset-bottom,0px) max(0px,env(safe-area-inset-right,0px));z-index:6}
+.tabs button{flex:1;height:56px;border:0;border-right:1.5px solid var(--rule);background:transparent;color:var(--ink);font:700 15px var(--tel);cursor:pointer}
+.tabs button:last-child{border-right:0}
+.tabs button[aria-selected="true"]{background:var(--band);color:var(--band-ink)}
+.zctl{position:fixed;right:max(12px,env(safe-area-inset-right,0px));bottom:calc(68px + env(safe-area-inset-bottom,0px));z-index:7;display:flex;align-items:center;background:var(--paper);border:1.5px solid var(--rule)}
+.zctl button{width:46px;height:46px;border:0;background:var(--band);color:var(--band-ink);font:700 26px/1 var(--tel);cursor:pointer}
+.zctl button:disabled{opacity:.35}
+.zctl span{min-width:56px;text-align:center;font:700 15px var(--num);font-variant-numeric:tabular-nums;color:var(--ink)}
+</style></head><body>
+
+<div class="wrap" id="app">
+  <header>
+    <div class="bar">
+      <h1>Telugu Calendar</h1>
+      <div class="sws">
+        <button class="sw" id="swColor" role="switch" aria-checked="false"><span>రంగులు</span><i></i></button>
+        <button class="sw" id="swDark" role="switch" aria-checked="false"><span>డార్క్</span><i></i></button>
+      </div>
+    </div>
+    <div class="chips" id="months"></div>
+  </header>
+  <main id="main"></main>
+</div>
+<nav class="tabs" role="tablist" id="tabs">
+  <button role="tab" data-v="month" aria-selected="true">నెల</button>
+  <button role="tab" data-v="day" aria-selected="false">రోజు</button>
+  <button role="tab" data-v="fest" aria-selected="false">పండుగలు</button>
+</nav>
+
+<script>
+
+var WD=["ఆది","సోమ","మంగళ","బుధ","గురు","శుక్ర","శని"];
+var WDEN=["SUN","MON","TUE","WED","THU","FRI","SAT"];
+var MEN=["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+var MTE=["జనవరి","ఫిబ్రవరి","మార్చి","ఏప్రిల్","మే","జూన్","జూలై","ఆగస్టు","సెప్టెంబర్","అక్టోబర్","నవంబర్","డిసెంబర్"];
+var MASA=[[10,1,"భాద్రపద"],[10,11,"ఆశ్వయుజ"],[11,10,"కార్తీక"],[12,9,"మార్గశిర"]];
+
+/* Each day: [తిథి, నక్షత్రం, వర్జ్యం, అదనపు] exactly as printed. */
+var M={
+10:{
+ hdr:"భాద్రపద బ.పంచమి లగా ఆశ్వయుజ బ.షష్ఠి పర్యంతం",
+ sun:[["1","5-54","5-49"],["11","5-56","5-40"],["21","5-59","5-34"],["31","6-01","5-27"]],
+ kName:"రాహుకాలం",
+ k:["సా.4-30ల 6-00","ఉ.7-30ల 9-00","మ.3-00ల 4-30","మ.12-00ల 1-30","మ.1-30ల 3-00","ఉ.10-30ల 12-00","ఉ.9-00ల 10-30"],
+ wd:[["సా.దు : 4-02ల4-48"],["మ.దు : 12-10ల 12-56","పు.దు : 2-10ల 2-56"],["ఉ.దు : 8-17ల 9-03","రా.దు : 10-32ల 11-18"],["ప.దు : 11-23ల 12-10"],["ప.దు : 9-50ల 10-37","మ.దు : 2-30ల 3-17"],["ఉ.దు : 8-17ల 9-04","మ.దు : 12.10ల12.57"],["ఉ.దు : 7-29 వరకు"]],
+ greet:"2 - గాంధీజయంతి, 20 - విజయదశమి శుభాకాంక్షలు",
+ fest:[[2,"గాంధీజయంతి"],[6,"మత్రయైకాదశి"],[9,"మాసశివరాత్రి"],[10,"మహాలయామావాస్య, కుశగ్రహణం, బతుకమ్మ పండుగ ప్రారంభం"],[11,"కలశస్థాపనం, దేవీనవరాత్ర ప్రా., చిత్తకార్తె, శరద్ ఋతువు ప్రా."],[12,"చంద్రదర్శనం, తిరుమల శ్రీవారి బ్రహ్మోత్సవాలు"],[15,"శుక్ర మౌఢ్యమి ప్రా."],[16,"సరస్వతీపూజ"],[17,"దేవీత్రిరాత్ర వ్రతం"],[18,"దుర్గాష్టమి, తులాసంక్రమణం"],[19,"మహర్నవమి"],[20,"విజయదశమి, అపరాజితా దేవిపూజ, శమీపూజ, దుర్గాదేవి విసర్జనం"],[22,"మత్రయైకాదశి"],[24,"స్వాతికార్తె, శని త్రయోదశి"],[28,"అట్లతదియ"],[29,"సంకటహరచతుర్థి, శుక్రమౌఢ్య త్యాగం"]],
+ d:[
+ ["బ.పంచమి.2.42","కృత్తి.ఉ.9.00","రా.11.59ల1.29",""],
+ ["బ.షష్ఠి.ప.12.24","రోహిణి.ఉ.7.29 · మృగ తె.5.52","ప.12.42ల2.12",""],
+ ["బ.సప్తమి.ప.10.00","ఆర్ద్ర తె.4.09","ప.1.40ల3.09",""],
+ ["బ.అష్ట.ఉ.7.34 · నవ.తె.5.09","పునః.రా.2.30","ప.3.19ల4.48",""],
+ ["బ.దశ.రా.2.56","పుష్య.రా.12.59","ప.10.00ల11.30",""],
+ ["బ.ఏకా.రా.12.54","ఆశ్రే.రా.11.40","ప.1.05ల2.36",""],
+ ["బ.ద్వాద.రా.11.12","మఖ.రా.10.40","ప.11.01ల12.42",""],
+ ["బ.త్రయో.రా.9.48","పుబ్బ.రా.9.58","ఉ.6.26ల7.59 · తె.5.05ల",""],
+ ["బ.చతు.రా.8.53","ఉత్తర.రా.9.44","ఉ.6.41ల",""],
+ ["అమావాస్య రా.8.23","హస్త.రా.9.54","ఉ.6.11ల7.48",""],
+ ["శు.పాడ్యమి.రా.8.26","చిత్త.రా.10.38","ఉ.6.09ల7.48 · తె.4.28ల",""],
+ ["శు.విదియ.రా.8.56","స్వాతి.రా.11.46","ఉ.6.10ల · తె.5.46ల",""],
+ ["శు.తదియ.రా.10.00","విశాఖ.రా.1.28","ఉ.7.28ల · తె.5.48ల",""],
+ ["శు.చవితి.రా.11.26","అనూరా.తె.3.30","ఉ.7.32ల",""],
+ ["శు.పంచమి.రా.1.17","జ్యేష్ఠ.సా.5.56","ప.9.40ల11.26",""],
+ ["శు.షష్ఠి.రా.3.21","మూల.పూర్తి","ప.2.48ల4.34",""],
+ ["శు.సప్తమి.తె.5.29","మూల.ఉ.8.31","ప.6.45ల8.31 · రా.7.10ల8.56",""],
+ ["శు.అష్టమి పూర్తి","పూ.షాఢ.ప.11.08","రా.7.57ల9.43",""],
+ ["శు.అష్టమి.ఉ.7.27","ఉ.షాఢ.ప.1.36","రా.5.57ల7.42",""],
+ ["శు.నవమి.ఉ.9.10","శ్రవణ.ఉ.3.46","రా.8.03ల9.46","దశమి తిథి"],
+ ["శు.దశమి.ఉ.10.30","ధనిష్ఠ.సా.5.33","రా.1.08ల2.49","ఏకాదశి తిథి"],
+ ["శు.ఏకాదశి.ఉ.11.21","శతభిష.రా.6.50","రా.1.28ల3.07","ద్వాదశి తిథి"],
+ ["శు.ద్వాదశి.ఉ.11.43","పూ.భాద్ర.రా.7.39","తె.5.22ల","త్రయోదశి తిథి"],
+ ["శు.త్రయోదశి.ఉ.11.33","ఉ.భాద్ర.రా.7.56","ఉ.6.59ల","చతుర్దశి తిథి"],
+ ["శు.చతుర్దశి.ఉ.10.53","రేవతి.రా.7.47","ఉ.7.51ల9.27",""],
+ ["పౌర్ణమి ఉ.9.47","అశ్విని.రా.7.11","ప.3.17ల4.51 · తె.4.24ల5.56",""],
+ ["బ.పాడ్యమి.ఉ.8.18","భరణి.రా.6.14","తె.5.36ల",""],
+ ["బ.విదియ.ఉ.6.30 · తదియ.తె.4.26","కృత్తిక.సా.4.58","ఉ.7.06ల",""],
+ ["బ.చవితి.రా.2.10","రోహిణి.3.30","ఉ.7.59ల9.29 · రా.8.43ల10.13",""],
+ ["బ.పంచమి.రా.11.46","మృగశిర.1.53","రా.9.42ల11.11",""],
+ ["బ.షష్ఠి.రా.9.21","ఆర్ద్ర.12.13","రా.11.23ల12.52",""]
+ ]},
+11:{
+ hdr:"కార్తీక బ.సప్తమి లగా కార్తీక బ.షష్ఠి పర్యంతం",
+ sun:[["1","6-01","5-27"],["11","6-05","5-23"],["21","6-10","5-20"],["30","6-16","5-20"]],
+ kName:"యమకంటక కాలం",
+ k:["మ.12-00ల 1-30","ప.10-30ల 12-00","ఉ.9-00ల 10-30","ఉ.7-30ల 9-00","ఉ.6-00ల 7-30","మ.3-00ల 4-30","మ.1-30ల 3-00"],
+ wd:[["సా.దు : 3-51ల4-36"],["మ.దు : 12-07ల 12-52","పు.దు : 2-21ల 3-06"],["ఉ.దు : 8-22ల 9-07","రా.దు : 10-27ల 11-18"],["ప.దు : 11-22ల 12-07"],["ప.దు : 9-52ల 10-37","మ.దు : 2-21ల 3-06"],["ఉ.దు : 8-24ల 9-09","మ.దు : 12.08ల12.53"],["ఉ.దు : 7-37 వరకు"]],
+ greet:"8 - దీపావళి, 13 - నాగులచవితి, 24 - కార్తీక పౌర్ణమి శుభాకాంక్షలు",
+ fest:[[1,"ఆంధ్రప్రదేశ్ అవతరణ దినోత్సవం, భానుసప్తమి"],[5,"మత్రయైకాదశి"],[6,"విశాఖకార్తె"],[7,"ధన్వంతరి జయంతి, ధనత్రయోదశి, మాసశివరాత్రి, నరకచతుర్దశి"],[8,"దీపావళి"],[9,"ఆకాశదీప ప్రా., అమా సోమవార వ్రతం"],[10,"అఖండ దీప ప్రా., చంద్రదర్శనం"],[11,"అన్నాచెల్లెళ్ల పండుగ, భగినీహస్త భోజనం"],[13,"నాగులచవితి"],[14,"నెహ్రూ జయంతి"],[17,"వృశ్చిక సంక్రమణం"],[19,"యాజ్ఞవల్క్య జయంతి"],[20,"మత్రయైకాదశి, అనూరాధ కార్తె"],[21,"క్షీరాబ్ధి ద్వాదశి"],[24,"కార్తీక పూర్ణిమ, జ్వాలా తోరణం, గురునానక్ జయంతి"],[27,"సంకటహరచతుర్థి, సుధీంద్రతీర్థ ఆరాధన"]],
+ d:[
+ ["బ.సప్తమి.రా.7.01","పునః.ఉ.10.33","రా.6.03ల7.33",""],
+ ["బ.అష్టమి.సా.4.50","పుష్య.ఉ.9.02","రా.9.07ల10.37",""],
+ ["బ.నవమి.ప.2.52","ఆశ్రే.ఉ.7.40","రా.7.07ల8.39",""],
+ ["బ.దశమి.ప.1.11","మఖ.ఉ.6.35 · పుబ్బ తె.5.41","ప.2.17ల3.49","(దశమి+ఏకాదశి) తిథి ద్వయం"],
+ ["బ.ఏకాదశి.ప.11.51","ఉత్తర.రా.5.21","ప.12.47ల2.22","ద్వాదశి తిథి"],
+ ["బ.ద్వాదశి.ప.10.56","హస్త.రా.5.23","ప.1.46ల3.22",""],
+ ["బ.త్రయోదశి.ప.10.30","చిత్త.తె.6.01","ప.1.36ల3.14",""],
+ ["బ.చతుర్దశి.ప.10.34","స్వాతి.పూర్తి","ప.11.53ల1.33","అమావాస్య తిథి"],
+ ["అమావాస్య ప.11.09","స్వాతి.ఉ.7.10","ప.1.09ల2.51","పాడ్యమి తిథి"],
+ ["శు.పాడ్యమి.ప.12.16","విశాఖ.ఉ.8.45","ప.1.05ల2.49","విదియ తిథి"],
+ ["శు.విదియ.మ.1.47","అనూరా.ప.10.44","సా.4.53ల6.38","శూన్య తిథి"],
+ ["శు.తదియ.సా.3.40","జ్యేష్ఠ.ప.1.05","రా.9.56ల11.42",""],
+ ["శు.చవితి.రా.5.46","మూల.3.39","ప.1.53ల3.39 · రా.2.16ల4.02",""],
+ ["శు.పంచమి.రా.7.56","పూ.షాఢ.రా.6.16","ప.3.05ల4.51",""],
+ ["శు.షష్ఠి.రా.9.57","ఉ.షాఢ.రా.8.46","రా.1.09ల2.54",""],
+ ["శు.సప్తమి.రా.11.59","శ్రవణ.రా.11.03","రా.3.23ల5.07",""],
+ ["శు.అష్టమి.రా.1.08","ధనిష్ఠ.రా.12.58","వర్జ్యము లేదు",""],
+ ["శు.నవమి.రా.1.58","శతభిష.2.22","ఉ.8.35ల10.17",""],
+ ["శు.దశమి.రా.2.23","పూ.భాద్ర.3.20","ఉ.9.02ల10.42",""],
+ ["శు.ఏకాదశి.రా.2.12","ఉ.భాద్ర.3.44","ప.1.06ల2.44",""],
+ ["శు.ద్వాదశి.రా.1.34","రేవతి.3.42","ప.3.43ల5.19",""],
+ ["శు.త్రయోదశి.రా.12.25","అశ్విని.3.09","రా.11.15ల12.49",""],
+ ["శు.చతుర్దశి.రా.10.57","భరణి.2.18","ప.12.26ల1.58",""],
+ ["పౌర్ణమి రా.9.05","కృత్తిక.1.05","ప.1.38ల3.08",""],
+ ["బ.పాడ్యమి.రా.7.02","రోహిణి.11.40","సా.4.09ల5.39 · తె.4.54",""],
+ ["బ.విదియ.సా.4.47","మృగశిర.రా.10.04","ఉ.6.24ల · తె.5.52ల",""],
+ ["బ.తదియ.2.25","ఆర్ద్ర.రా.8.23","ఉ.7.22ల","(తదియ+చవితి) తిథి ద్వయం"],
+ ["బ.చవితి.11.59","పునః.రా.6.39","ఉ.7.32ల9.01 · రా.2.10ల3.40","పంచమి తిథి"],
+ ["బ.పంచమి.ఉ.9.45","పుష్య.తె.5.09","తె.5.12ల",""],
+ ["బ.షష్ఠి.ఉ.7.36 · సప్త.తె.5.55","ఆశ్లేష.తె.3.46","ఉ.6.44ల · రా.3.11ల4.42",""]
+ ]},
+12:{
+ hdr:"కార్తీక బ.అష్టమి లగా మార్గశిర బ.అష్టమి పర్యంతం",
+ sun:[["1","6-17","5-20"],["11","6-22","5-21"],["21","6-28","5-26"],["31","6-33","5-31"]],
+ kName:"గుళిక కాలం",
+ k:["మ.3-00ల 4-30","ప.1-30ల 3-00","ఉ.12-00ల 1-30","ఉ.10-30ల 12-00","ఉ.9-00ల 10-30","ఉ.7-30ల 9-00","ఉ.6-00ల 7-30"],
+ wd:[["సా.దు : 3-58ల4-42"],["మ.దు : 12-16ల 1-00","పు.దు : 2-28ల 3-12"],["ఉ.దు : 8-37ల 9-21","రా.దు : 10-36ల 11-28"],["ప.దు : 11-33ల 12-17"],["ప.దు : 10-05ల 10-49","మ.దు : 2-28ల 3-12"],["ఉ.దు : 8-38ల 9-22","మ.దు : 12-18ల 1-02"],["ఉ.దు : 7-54 వరకు"]],
+ greet:"23 - శ్రీ దత్త జయంతి, 25 - క్రిస్మస్ శుభాకాంక్షలు",
+ fest:[[3,"జ్యేష్ఠకార్తె"],[4,"మత్రయైకాదశి"],[7,"మాసశివరాత్రి"],[9,"పోలి స్వర్గం, హేమంత ఋతువు ప్రారంభం"],[10,"చంద్రదర్శనం"],[15,"సుబ్రహ్మణ్య షష్ఠి"],[16,"ధనుస్సంక్రమణం, ధనుర్మాస ప్రా., మూలకార్తె"],[17,"కాలభైరవాష్టమి"],[20,"మత్రయైకాదశి, ముక్కోటి ఏకాదశి, గీతాజయంతి"],[21,"సదరు శ్రీ శివానంద మూర్తి గారి జయంతి మహోత్సవం"],[22,"హనుమద్వ్రతం"],[23,"శ్రీ దత్తజయంతి"],[25,"క్రిస్మస్"],[27,"సంకటహరచతుర్థి"],[31,"అనఘాష్టమి"]],
+ d:[
+ ["బ.అష్టమి.రా.3.55","మఖ.2.38","రా.10.20ల11.52",""],
+ ["బ.నవమి.రా.2.40","పుబ్బ.1.46","రా.8.50ల10.24",""],
+ ["బ.దశమి.రా.1.48","ఉత్తర.1.20","రా.9.43ల11.19",""],
+ ["బ.ఏకాదశి.రా.1.30","హస్త.1.19","రా.9.28ల11.06",""],
+ ["బ.ద్వాదశి.రా.1.34","చిత్త.1.47","రా.7.35ల9.15",""],
+ ["బ.త్రయోదశి.రా.2.15","స్వాతి.ప.2.44","రా.8.40ల10.22",""],
+ ["బ.చతుర్దశి.రా.3.22","విశాఖ.4.11","రా.8.30ల10.14",""],
+ ["అమావాస్య.5.00","అనూరా.6.05","రా.12.12ల1.57",""],
+ ["శు.పాడ్యమి పూర్తి","జ్యేష్ఠ","తె.5.12ల",""],
+ ["శు.పాడ్యమి.ఉ.6.58","మూల.రా.10.53","ఉ.6.58ల · రా.9.07ల10.53",""],
+ ["శు.విదియ.ఉ.9.08","పూ.షాఢ.రా.1.31","ప.9.33ల11.19","తదియ తిథి"],
+ ["శు.తదియ.11.19","ఉ.షాఢ.తె.4.07","ప.10.24ల12.10","చవితి తిథి"],
+ ["శు.చవితి.1.21","శ్రవణ.తె.6.23","ప.8.30ల10.15","శూన్య తిథి"],
+ ["శు.పంచమి.3.07","ధనిష్ఠ పూర్తి","ప.10.44ల12.28",""],
+ ["శు.షష్ఠి.4.27","ధనిష్ఠ.ఉ.8.22","సా.4.01ల5.43",""],
+ ["శు.సప్తమి.5.18","శతభిష.9.53","రా.12.34ల2.14",""],
+ ["శు.అష్టమి.సా.5.39","పూ.భాద్ర.10.55","రా.8.44ల10.26",""],
+ ["శు.నవమి.సా.5.30","ఉ.భాద్ర.11.29","రా.11.30ల1.06",""],
+ ["శు.దశమి.సా.4.48","రేవతి.11.31","వర్జ్యము లేదు",""],
+ ["శు.ఏకాదశి.ప.3.43","అశ్విని.11.09","రా.8.26ల9.59",""],
+ ["శు.ద్వాదశి.2.12","భరణి.10.22","రా.9.48ల11.20","(ద్వాదశి+త్రయోదశి) తిథి ద్వయం"],
+ ["శు.త్రయోదశి.12.22","కృత్తిక.9.14","రా.12.20ల1.50","చతుర్దశి తిథి"],
+ ["శు.చతుర్దశి.10.19","రోహిణి.7.53 · మృగ.6.22","ప.1.08ల2.38",""],
+ ["పౌర్ణమి.8.04 · బ.పాడ్య.5.44","ఆర్ద్ర.4.41","ప.2.11ల3.41",""],
+ ["బ.విదియ.రా.3.21","పునర్వసు.3.00","ప.3.51ల5.20",""],
+ ["బ.తదియ.రా.1.04","పుష్య.1.23","ప.10.28ల11.58",""],
+ ["బ.చవితి.10.57","ఆశ్లేష.11.57","ప.1.26ల2.56",""],
+ ["బ.పంచమి.రా.9.02","మఖ.10.43","ప.11.20ల12.51 · తె.6.26ల",""],
+ ["బ.షష్ఠి.7.28","పుబ్బ.9.50","తె.4.52ల6.26",""],
+ ["బ.సప్తమి.6.13","ఉత్తర.9.15","తె.5.38ల",""],
+ ["బ.అష్టమి.5.28","హస్త.9.11","ఉ.7.10ల · తె.5.17ల",""]
+ ]}
+};
+/* Cells where the scan was hard to read are shown with a marker so they can be checked against the printed page. */
+var CHECK={"12-9":1,"12-23":1,"12-24":1};
+
+
+var MONTHS=[];
+[[2026,[10,11,12]],[2027,[1,2,3,4,5,6,7,8,9,10,11,12]]].forEach(function(r){r[1].forEach(function(m){MONTHS.push([r[0],m])})});
+var NODATA="ఈ నెల పంచాంగ వివరాలు (తిథి, నక్షత్రం, వర్జ్యం, పండుగలు) ఇంకా చేర్చలేదు. 2027 ముద్రిత క్యాలెండర్ ఇస్తే ఇక్కడ చేర్చవచ్చు. తేదీలు, వారాలు మాత్రం సరిగ్గా చూపబడతాయి.";
+var ML=[0.7,0.85,1,1.25,1.5,2,2.5];
+var st={i:0,d:1,v:"month",zi:2,N:5};
+var $=function(i){return document.getElementById(i)};
+function Y(){return MONTHS[st.i][0]}
+function Mo(){return MONTHS[st.i][1]}
+function mdata(y,m){return y===2026?M[m]:null}
+function dim(y,m){return new Date(y,m,0).getDate()}
+function wdOf(y,m,d){return new Date(y,m-1,d).getDay()}
+function isToday(y,m,d){var t=new Date();return t.getFullYear()===y&&t.getMonth()+1===m&&t.getDate()===d}
+function masa(m,d){var r=MASA[0][2];MASA.forEach(function(x){if(m>x[0]||(m===x[0]&&d>=x[1]))r=x[2]});return r}
+function moonType(t){return t.indexOf("అమావాస్య")===0?"new":t.indexOf("పౌర్ణమి")===0?"full":""}
+function fests(md,d){return md?md.fest.filter(function(f){return f[0]===d}):[]}
+function vj(s){return s.replace(/(^|· )(ఉ|ప|సా|రా|తె)\./g,'$1$2.వ.')}
+function fitZ(N){var el=$("main");var cw=(el&&el.clientWidth)||window.innerWidth||360;return Math.max(0.3,Math.min(1.6,(cw-3)/(58+N*78)))}
+function curZ(N){return fitZ(N)*ML[st.zi]}
+try{var q=parseInt(localStorage.getItem("pz2"),10);if(q>=0&&q<ML.length)st.zi=q}catch(e){}
+
+/* ---- theme: colour and dark are independent; dark follows the system until the switch is used ---- */
+var pref={dark:null,color:0};
+try{var sp=JSON.parse(localStorage.getItem("pp")||"{}");if(sp&&typeof sp==="object"){if(typeof sp.dark==="boolean")pref.dark=sp.dark;if(sp.color===1)pref.color=1}}catch(e){}
+function sysDark(){
+  var t=document.documentElement.getAttribute("data-theme");
+  if(t==="dark")return true;if(t==="light")return false;
+  try{return !!(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)}catch(e){return false}
+}
+function isDark(){return pref.dark===null?sysDark():pref.dark}
+function applyTheme(){
+  var r=document.documentElement,d=isDark();
+  r.setAttribute("data-dark",d?"1":"0");r.setAttribute("data-color",pref.color?"1":"0");
+  $("swDark").setAttribute("aria-checked",String(d));$("swColor").setAttribute("aria-checked",String(!!pref.color));
+  try{if(window.AndroidApp&&window.AndroidApp.setDark)window.AndroidApp.setDark(d)}catch(e){}
+}
+function saveTheme(){try{localStorage.setItem("pp",JSON.stringify({dark:pref.dark,color:pref.color}))}catch(e){}}
+
+function renderMonths(){
+  var h="";
+  MONTHS.forEach(function(x,i){h+='<button data-i="'+i+'" aria-pressed="'+(i===st.i)+'">'+MTE[x[1]-1]+'<small>'+x[0]+'</small></button>'});
+  var c=$("months");c.innerHTML=h;
+  var b=c.children[st.i];if(b)c.scrollLeft=b.offsetLeft-(c.clientWidth-b.offsetWidth)/2;
+}
+function monthView(){
+  var y=Y(),m=Mo(),md=mdata(y,m),n=dim(y,m),first=wdOf(y,m,1),N=Math.ceil((first+n)/7),occ={},runs=[],h="",c,r,d;
+  for(d=1;d<=n;d++){var p=first+d-1;occ[Math.floor(p/7)+"-"+(p%7)]=d}
+  for(c=0;c<N;c++){r=0;while(r<7){if(!occ[c+"-"+r]){var s=r;while(r<7&&!occ[c+"-"+r])r++;runs.push({c:c,s:s,e:r,len:r-s})}else r++}}
+  var best=null;runs.forEach(function(x){if(!best||x.len>best.len)best=x});
+  h+='<div class="page"><div class="top">';
+  h+='<div class="mid"><div class="en">'+MEN[m-1]+'</div><div class="y">'+y+'</div><div class="te">'+MTE[m-1]+'</div></div>';
+  if(md){
+    var kk=md.k.map(function(v,i){return WD[i]+" "+v}).join(", ");
+    h+='<div><b>శ్రీ పరాభవ నామ సంవత్సరం</b><br>'+md.hdr+'<table><tr><th>తేది</th><th>సూ.ఉ.</th><th>అస్త</th></tr>'+md.sun.map(function(x){return '<tr><td>'+x[0]+'</td><td>'+x[1]+'</td><td>'+x[2]+'</td></tr>'}).join("")+'</table></div>';
+    h+='<div class="k"><b>'+md.kName+':</b> సూర్యోదయం 6 గంటలు అయితే '+kk+'<div class="cred">పంచాంగకర్తలు: కీ.శే. బ్రహ్మశ్రీ తంగిరాల పూర్ణయ్య సిద్ధాంతి గారి పౌత్రులు పట్టాభిరామయ్య మరియు రామనాథ సిద్ధాంతి, రేలంగి</div></div>';
+  }else h+='<div class="nodata">'+NODATA+'</div>';
+  h+='</div>';
+  st.N=N;
+  h+='<div class="scroll"><div class="g" style="grid-template-columns:58px repeat('+N+',minmax(78px,1fr));zoom:'+curZ(N)+'">';
+  for(r=0;r<7;r++){
+    h+='<div class="wk'+(r===0?' sun':'')+'" style="grid-row:'+(r+1)+';grid-column:1"><div class="en">'+WDEN[r]+'</div><div class="te">'+WD[r]+'</div>'+(md?'<div class="t">'+md.wd[r].join("<br>")+'</div>':'')+'</div>';
+  }
+  for(c=0;c<N;c++)for(r=0;r<7;r++){
+    var dd=occ[c+"-"+r],pos='grid-row:'+(r+1)+';grid-column:'+(c+2);
+    if(dd){
+      var D=md?md.d[dd-1]:null,mt=D?moonType(D[0]):"",f=fests(md,dd).length;
+      var mk=mt==="new"?'అమా':mt==="full"?'పౌర్ణ':'';
+      var ms=md?MASA.filter(function(x){return x[0]===m&&x[1]===dd&&dd>1}).map(function(x){return x[2]})[0]:null;
+      h+='<button class="dc'+(f?' f':'')+(mt==="full"?' pf':'')+(mt==="new"?' pn':'')+(isToday(y,m,dd)?' td':'')+(dd===st.d?' sel':'')+'" style="'+pos+'" data-d="'+dd+'" aria-label="'+dd+' '+MTE[m-1]+' '+y+'">'+
+         '<div class="hd"><span class="n '+mt+'">'+dd+'</span><span class="mk">'+mk+'</span>'+(ms?'<span class="ms">'+ms+'</span>':'')+'</div>'+
+         (D?'<div class="l">'+D[0]+'</div><div class="l">'+D[1]+'</div><div class="l">'+vj(D[2])+'</div>'+(D[3]?'<div class="x">'+D[3]+'</div>':''):'')+'</button>';
+    }else if(md&&best&&c===best.c&&r===best.s){
+      h+='<aside class="fb" style="grid-row:'+(best.s+1)+'/'+(best.e+1)+';grid-column:'+(c+2)+'"><h4>పండుగలు</h4><div class="fl">'+
+         md.fest.map(function(x){return x[0]+') '+x[1]}).join("<br>")+'</div></aside>';
+    }else if(!(md&&best&&c===best.c&&r>best.s&&r<best.e)){
+      h+='<div style="'+pos+'"></div>';
+    }
+  }
+  h+='</div></div>';
+  if(md)h+='<div class="band">'+md.greet+'</div>';
+  h+='</div>';
+  if(md)h+='<div class="info"><h3>పండుగలు</h3>'+md.fest.map(function(x){return x[0]+') '+x[1]}).join('<br>')+'</div>';
+  h+='<div class="hint">తేదీని నొక్కితే ఆ రోజు వివరాలు తెరుచుకుంటాయి. + తో పెద్దది చేసినప్పుడు ఎడమవైపుకు జరిపి మిగిలిన వారాలు చూడవచ్చు.</div>';
+  h+=zctl();
+  return h;
+}
+function row(h,p,cls,note){
+  return '<div class="row '+(cls||"")+'"><h3>'+h+'</h3><p>'+p+'</p>'+(note?'<div class="note">'+note+'</div>':'')+'</div>';
+}
+function dayView(){
+  var y=Y(),m=Mo(),d=st.d,md=mdata(y,m),D=md?md.d[d-1]:null,w=wdOf(y,m,d),mt=D?moonType(D[0]):"",f=fests(md,d),h="";
+  h+='<div class="nav"><button id="prev" aria-label="క్రితం రోజు">‹</button><button class="today" id="today">ఈ రోజు</button><button id="next" aria-label="మరుసటి రోజు">›</button></div>';
+  h+='<section class="hero"><div class="num '+mt+'">'+d+'</div><div class="wd">'+WD[w]+'వారం</div><div class="en">'+WDEN[w]+' · '+MEN[m-1]+' '+y+' · '+MTE[m-1]+'</div>'+
+     (md?'<div class="masa">'+masa(m,d)+' మాసం'+(mt==="new"?' · అమావాస్య':mt==="full"?' · పౌర్ణమి':'')+'</div>':'')+'</section>';
+  if(!md)return h+'<div class="info nodata">'+NODATA+'</div>';
+  h+='<div class="rows">';
+  if(f.length)h+=row("పండుగలు",f.map(function(x){return x[1]}).join("<br>"),"fest");
+  h+=row("తిథి",D[0],"",D[3]?'<span class="tag">'+D[3]+'</span>':"");
+  h+=row("నక్షత్రం",D[1]);
+  h+=row("వర్జ్యం",vj(D[2]));
+  h+='<div class="split">'+row(md.kName,md.k[w])+row("దుర్ముహూర్తం",md.wd[w].join("<br>"))+'</div></div>';
+  h+='<div class="info"><h3>సూర్యోదయ / సూర్యాస్తమయాలు</h3><table><tr><th>తేది</th><th>సూ.ఉ.</th><th>అస్త.</th></tr>'+
+     md.sun.map(function(r){return '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>'}).join("")+
+     '</table><div style="margin-top:6px;color:var(--muted)">'+md.kName+' సూర్యోదయం 6 గంటలు అయితే చూపినది. '+md.hdr+'.</div></div>';
+  h+='<div class="band" style="margin-top:12px;order:0">'+md.greet+'</div>';
+  if(CHECK[m+"-"+d])h+='<div class="verify">ఈ రోజు వివరాలు ముద్రిత క్యాలెండర్‌తో ఒకసారి సరిచూడండి.</div>';
+  return h;
+}
+function festView(){
+  var y=Y(),m=Mo(),md=mdata(y,m);
+  if(!md)return '<div class="info nodata">'+NODATA+'</div>';
+  return '<div class="flist">'+md.fest.map(function(f){
+    return '<button data-d="'+f[0]+'"><b>'+f[0]+'</b><span>'+f[1]+'<em>'+WD[wdOf(y,m,f[0])]+'వారం · '+masa(m,f[0])+'</em></span></button>'}).join("")+'</div><div class="band" style="margin-top:12px;order:0">'+md.greet+'</div>';
+}
+function zctl(){
+  return '<div class="zctl" role="group" aria-label="జూమ్"><button data-z="-1" aria-label="చిన్నది చేయి"'+(st.zi===0?' disabled':'')+'>−</button><span id="zl">'+Math.round(ML[st.zi]*100)+'%</span><button data-z="1" aria-label="పెద్దది చేయి"'+(st.zi===ML.length-1?' disabled':'')+'>+</button></div>';
+}
+function zoomBy(k){
+  st.zi=Math.max(0,Math.min(ML.length-1,st.zi+k));
+  var g=document.querySelector(".g");if(g)g.style.zoom=curZ(st.N);
+  $("zl").textContent=Math.round(ML[st.zi]*100)+"%";
+  var bs=document.querySelectorAll(".zctl button");
+  bs[0].disabled=st.zi===0;bs[1].disabled=st.zi===ML.length-1;
+  try{localStorage.setItem("pz2",String(st.zi))}catch(e){}
+}
+function render(){
+  renderMonths();
+  $("main").innerHTML=st.v==="day"?dayView():st.v==="month"?monthView():festView();
+  Array.prototype.forEach.call(document.querySelectorAll("#tabs button"),function(b){b.setAttribute("aria-selected",String(b.dataset.v===st.v))});
+}
+function setMonth(i,d){
+  st.i=i;var n=dim(MONTHS[i][0],MONTHS[i][1]);st.d=Math.max(1,Math.min(d||st.d,n));
+}
+function go(i,d){setMonth(i,d);st.v="day";render();window.scrollTo(0,0)}
+function step(k){
+  var i=st.i,d=st.d+k,y=MONTHS[i][0],m=MONTHS[i][1];
+  if(d<1){if(i===0)return;i--;d=dim(MONTHS[i][0],MONTHS[i][1])}
+  else if(d>dim(y,m)){if(i===MONTHS.length-1)return;i++;d=1}
+  setMonth(i,d);render();window.scrollTo(0,0);
+}
+function todayIdx(){
+  var t=new Date(),y=t.getFullYear(),m=t.getMonth()+1,k;
+  for(k=0;k<MONTHS.length;k++)if(MONTHS[k][0]===y&&MONTHS[k][1]===m)return [k,t.getDate()];
+  return null;
+}
+document.addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  if(b.id==="swDark"){pref.dark=!isDark();applyTheme();saveTheme();return}
+  if(b.id==="swColor"){pref.color=pref.color?0:1;applyTheme();saveTheme();return}
+  if(b.dataset.z!==undefined){zoomBy(+b.dataset.z);return}
+  if(b.dataset.i!==undefined){setMonth(+b.dataset.i);render();return}
+  if(b.dataset.v){st.v=b.dataset.v;render();window.scrollTo(0,0);return}
+  if(b.dataset.d){go(st.i,+b.dataset.d);return}
+  if(b.id==="prev")step(-1);
+  if(b.id==="next")step(1);
+  if(b.id==="today"){var t=todayIdx();if(t)go(t[0],t[1]);else go(0,1)}
+});
+var sx=null,sy=null;
+document.addEventListener("touchstart",function(e){if(e.touches.length===1&&!e.target.closest(".scroll,.chips")){sx=e.touches[0].clientX;sy=e.touches[0].clientY}else sx=null},{passive:true});
+document.addEventListener("touchend",function(e){
+  if(sx===null)return;
+  var dx=e.changedTouches[0].clientX-sx,dy=e.changedTouches[0].clientY-sy;sx=null;
+  if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)*1.5)return;
+  if(st.v==="day")step(dx<0?1:-1);
+  else{var ni=st.i+(dx<0?1:-1);if(ni>=0&&ni<MONTHS.length){setMonth(ni);render();window.scrollTo(0,0)}}
+},{passive:true});
+window.addEventListener("resize",function(){var g=document.querySelector(".g");if(g&&st.v==="month")g.style.zoom=curZ(st.N)});
+applyTheme();
+(function(){var t=todayIdx();if(t)setMonth(t[0],t[1]);else setMonth(0,1);render()})();
+</script>
+</body></html>
