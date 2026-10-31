@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -24,3 +27,14 @@ jobs:
         with:
           name: TeluguCalendar-apk
           path: TeluguCalendar.apk
+      - name: Save the APK on the apk branch
+        run: |
+          mkdir -p /tmp/out && cp TeluguCalendar.apk /tmp/out/
+          git config user.name "github-actions"
+          git config user.email "actions@users.noreply.github.com"
+          git checkout --orphan apk
+          git rm -rf . -q
+          cp /tmp/out/TeluguCalendar.apk .
+          git add TeluguCalendar.apk
+          git commit -q -m "Built TeluguCalendar.apk"
+          git push -f origin apk

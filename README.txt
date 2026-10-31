@@ -29,8 +29,8 @@ Route B - GitHub, no installs
   1. Create a new private repository on github.com and upload everything in
      this folder (keep the .github folder).
   2. Open the Actions tab > "Build APK" > it runs by itself (about 3 minutes).
-  3. Open the finished run and download the "TeluguCalendar-apk" file. Unzip it to
-     get TeluguCalendar.apk.
+  3. When the run finishes, open the "apk" branch of the repository and download
+     TeluguCalendar.apk from there. (It is also attached to the run as "TeluguCalendar-apk".)
 
 Editing the calendar
   All content is in app/src/main/assets/index.html (one file, plain HTML/JS).
